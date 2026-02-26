@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Admin | <?= e($settings['site_name'] ?? 'Rental') ?></title>
+    <link rel="stylesheet" href="/public/css/app.css">
     <link rel="stylesheet" href="/css/app.css">
     <?php
     $primaryColor = $settings['primary_color'] ?? '#3b82f6';
