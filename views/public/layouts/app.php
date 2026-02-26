@@ -30,11 +30,20 @@
     <link rel="icon" type="image/x-icon" href="<?= e($s['favicon_path']) ?>">
     <?php endif; ?>
 
-    <!-- Tailwind CSS -->
-    <link rel="stylesheet" href="/public/css/app.css">
-    <link rel="stylesheet" href="/css/app.css">
+    <!-- Preconnect hanya untuk aset kritis -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Dynamic Theme CSS -->
+    <!-- CSS utama — deteksi path otomatis (local vs prod/hosting) -->
+    <?php
+    // Local dev : DOCUMENT_ROOT langsung di public/, path = /css/app.css
+    // Prod/hosting: public/ adalah subfolder,       path = /public/css/app.css
+    $cssPath = file_exists(($_SERVER['DOCUMENT_ROOT'] ?? '') . '/css/app.css')
+        ? '/css/app.css'
+        : '/public/css/app.css';
+    ?>
+    <link rel="stylesheet" href="<?= $cssPath ?>">
+
+    <!-- Dynamic Theme CSS — inline, tidak ada request tambahan -->
     <style>
         :root {
             <?php foreach ($palette as $shade => $hex): ?>
@@ -49,15 +58,31 @@
         .bg-primary { background-color: <?= $primaryColor ?>; }
         .border-primary { border-color: <?= $primaryColor ?>; }
         .ring-primary { --tw-ring-color: <?= $primaryColor ?>; }
+
+        /* Font fallback — ukuran sama dengan Sora/Nunito agar tidak CLS */
+        body { font-family: 'Nunito', 'Arial Rounded MT Bold', Arial, sans-serif; }
+        h1, h2, h3, h4, .sora { font-family: 'Sora', Arial, sans-serif; }
+        /* Size hint supaya browser sudah tahu slot sebelum font load */
+        h1 { font-size-adjust: 0.52; }
     </style>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!--
+        Google Fonts: load non-blocking via media="print" trick.
+        font-display=swap sudah ada dari Google, tapi kita tambah &display=swap
+        eksplisit untuk keamanan. Preload woff2 kritis di bawah.
+    -->
+    <link rel="preload" as="style"
+          href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Nunito:wght@400;500;600;700&display=swap"
+          onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet"
+              href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Nunito:wght@400;500;600;700&display=swap">
+    </noscript>
 
     <!-- Sitemap -->
     <link rel="sitemap" type="application/xml" href="/sitemap.xml">
 
-    <!-- Google Analytics (GA4) -->
+    <!-- Google Analytics (GA4) — async, tidak blokir -->
     <?php if (!empty($s['google_analytics_id'])): ?>
     <script async src="https://www.googletagmanager.com/gtag/js?id=<?= e($s['google_analytics_id']) ?>"></script>
     <script>
@@ -97,7 +122,11 @@
                 <!-- Logo -->
                 <a href="/" class="flex items-center gap-3">
                     <?php if (!empty($s['logo_path'])): ?>
-                        <img src="<?= e($s['logo_path']) ?>" alt="<?= e($s['site_name']) ?>" class="h-8 w-auto">
+                        <img src="<?= e($s['logo_path']) ?>"
+                             alt="<?= e($s['site_name']) ?>"
+                             class="h-8 w-auto"
+                             width="auto" height="32"
+                             fetchpriority="high">
                     <?php else: ?>
                         <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold"
                              style="background-color: <?= e($primaryColor) ?>">
@@ -109,30 +138,32 @@
 
                 <!-- Desktop Nav -->
                 <div class="hidden md:flex items-center gap-8">
-                    <a href="/" class="text-sm font-medium transition-colors <?= active_route('/') === 'active' ? 'text-primary' : 'text-gray-600 hover:text-gray-900' ?>"
-                       style="<?= active_route('/') === 'active' ? 'color: ' . $primaryColor : '' ?>">Beranda</a>
+                    <a href="/" class="text-sm font-medium transition-colors <?= active_route('/') === 'active' ? '' : 'text-gray-600 hover:text-gray-900' ?>"
+                       style="<?= active_route('/') === 'active' ? 'color:' . $primaryColor : '' ?>">Beranda</a>
                     <a href="/kendaraan" class="text-sm font-medium transition-colors <?= str_starts_with($_SERVER['REQUEST_URI'], '/kendaraan') ? '' : 'text-gray-600 hover:text-gray-900' ?>"
-                       style="<?= str_starts_with($_SERVER['REQUEST_URI'], '/kendaraan') ? 'color: ' . $primaryColor : '' ?>">Kendaraan</a>
-                    <a href="#cara-booking" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Cara Booking</a>
-                    <a href="/kontak" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Kontak</a>
+                       style="<?= str_starts_with($_SERVER['REQUEST_URI'], '/kendaraan') ? 'color:' . $primaryColor : '' ?>">Kendaraan</a>
+                    <a href="/#cara-booking" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Cara Booking</a>
+                    <a href="/kontak" class="text-sm font-medium transition-colors <?= str_starts_with($_SERVER['REQUEST_URI'], '/kontak') ? '' : 'text-gray-600 hover:text-gray-900' ?>"
+                       style="<?= str_starts_with($_SERVER['REQUEST_URI'], '/kontak') ? 'color:' . $primaryColor : '' ?>">Kontak</a>
                 </div>
 
                 <!-- CTA + Mobile menu -->
                 <div class="flex items-center gap-3">
                     <?php if (!empty($s['whatsapp_number'])): ?>
-                    <a href="https://wa.me/<?= e($s['whatsapp_number']) ?>" target="_blank"
+                    <a href="https://wa.me/<?= e($s['whatsapp_number']) ?>" target="_blank" rel="noopener"
                        class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold shadow-sm"
                        style="background-color: #25d366">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                         </svg>
                         WhatsApp
                     </a>
                     <?php endif; ?>
 
-                    <!-- Mobile hamburger -->
-                    <button @click="open = !open" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                        <svg class="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <button @click="open = !open"
+                            class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            aria-label="Menu">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path x-show="!open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                             <path x-show="open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -141,13 +172,13 @@
             </div>
 
             <!-- Mobile menu -->
-            <div x-show="open" x-transition class="md:hidden border-t border-gray-100 py-4 space-y-2">
+            <div x-show="open" x-transition class="md:hidden border-t border-gray-100 py-4 space-y-1">
                 <a href="/" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Beranda</a>
                 <a href="/kendaraan" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Kendaraan</a>
-                <a href="#cara-booking" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Cara Booking</a>
+                <a href="/#cara-booking" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Cara Booking</a>
                 <a href="/kontak" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Kontak</a>
                 <?php if (!empty($s['whatsapp_number'])): ?>
-                <a href="https://wa.me/<?= e($s['whatsapp_number']) ?>" target="_blank"
+                <a href="https://wa.me/<?= e($s['whatsapp_number']) ?>" target="_blank" rel="noopener"
                    class="block px-3 py-2 rounded-lg text-sm font-semibold text-white mt-2"
                    style="background-color: #25d366">
                     Chat WhatsApp
@@ -166,13 +197,13 @@
     <footer class="bg-gray-900 text-white" id="kontak">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-12">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Brand -->
                 <div>
                     <div class="flex items-center gap-3 mb-4">
                         <?php if (!empty($s['logo_path'])): ?>
-                            <img src="<?= e($s['logo_path']) ?>" alt="" class="h-8 brightness-0 invert">
+                            <img src="<?= e($s['logo_path']) ?>" alt="" class="h-8 brightness-0 invert" width="auto" height="32" loading="lazy">
                         <?php else: ?>
-                            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold" style="background-color: <?= e($primaryColor) ?>">R</div>
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold"
+                                 style="background-color: <?= e($primaryColor) ?>">R</div>
                         <?php endif; ?>
                         <span class="font-bold text-lg"><?= e($s['site_name'] ?? '') ?></span>
                     </div>
@@ -180,26 +211,23 @@
                         <?= e($s['tagline'] ?? 'Solusi transportasi terpercaya untuk perjalanan Anda.') ?>
                     </p>
                 </div>
-
-                <!-- Links -->
                 <div>
                     <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Navigasi</h4>
                     <div class="space-y-2">
                         <a href="/" class="block text-sm text-gray-400 hover:text-white transition-colors">Beranda</a>
                         <a href="/kendaraan" class="block text-sm text-gray-400 hover:text-white transition-colors">Daftar Kendaraan</a>
+                        <a href="/kontak" class="block text-sm text-gray-400 hover:text-white transition-colors">Kontak</a>
                         <a href="/sitemap.xml" class="block text-sm text-gray-400 hover:text-white transition-colors">Sitemap</a>
                     </div>
                 </div>
-
-                <!-- Contact -->
                 <div>
                     <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Kontak</h4>
                     <div class="space-y-3">
                         <?php if (!empty($s['whatsapp_number'])): ?>
-                        <a href="https://wa.me/<?= e($s['whatsapp_number']) ?>" target="_blank"
+                        <a href="https://wa.me/<?= e($s['whatsapp_number']) ?>" target="_blank" rel="noopener"
                            class="flex items-center gap-3 text-sm text-gray-400 hover:text-white transition-colors">
-                            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-green-500/10">
-                                <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-green-500/10 shrink-0">
+                                <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                                 </svg>
                             </div>
@@ -208,9 +236,12 @@
                         <?php endif; ?>
                         <?php if (!empty($s['email'])): ?>
                         <div class="flex items-center gap-3 text-sm text-gray-400">
-                            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: <?= e($primaryColor) ?>20">
-                                <svg class="w-4 h-4" style="color: <?= e($primaryColor) ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                 style="background-color: <?= e($primaryColor) ?>20">
+                                <svg class="w-4 h-4" style="color: <?= e($primaryColor) ?>"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                                 </svg>
                             </div>
                             <?= e($s['email']) ?>
@@ -218,9 +249,12 @@
                         <?php endif; ?>
                         <?php if (!empty($s['address'])): ?>
                         <div class="flex items-start gap-3 text-sm text-gray-400">
-                            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background-color: <?= e($primaryColor) ?>20">
-                                <svg class="w-4 h-4" style="color: <?= e($primaryColor) ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                 style="background-color: <?= e($primaryColor) ?>20">
+                                <svg class="w-4 h-4" style="color: <?= e($primaryColor) ?>"
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                 </svg>
                             </div>
                             <?= e($s['address']) ?>
@@ -229,19 +263,20 @@
                     </div>
                 </div>
             </div>
-
             <div class="mt-10 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
                 <?= e($s['footer_text'] ?? '© ' . date('Y') . ' ' . ($s['site_name'] ?? 'Rental Kendaraan') . '. All rights reserved.') ?>
             </div>
         </div>
     </footer>
 
-    <!-- Alpine.js -->
+    <!--
+        JS semua defer/async — tidak ada yang blokir render.
+        Alpine HARUS defer. HTMX HARUS defer.
+        app.js juga defer.
+    -->
+    <script src="/js/htmx.min.js" defer></script>
     <script src="/js/alpine.min.js" defer></script>
-    <!-- HTMX -->
-    <script src="/js/htmx.min.js"></script>
-    <!-- App JS -->
-    <script src="/js/app.js"></script>
+    <script src="/js/app.js" defer></script>
     <?php if (!empty($headScript)) echo $headScript; ?>
 
 </body>
