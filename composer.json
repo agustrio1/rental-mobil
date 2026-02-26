@@ -1,0 +1,27 @@
+{
+    "name": "rental/mobile-rental",
+    "description": "Website Rental Kendaraan - PHP Native",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "vlucas/phpdotenv": "^5.5",
+        "ramsey/uuid": "^4.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        },
+        "files": [
+            "src/Helpers/functions.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true
+    },
+    "scripts": {
+        "post-install-cmd": [],
+        "migrate": "php artisan.php migrate",
+        "migrate:fresh": "php artisan.php migrate:fresh",
+        "migrate:drop": "php artisan.php migrate:drop"
+    }
+}
