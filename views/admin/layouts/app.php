@@ -7,6 +7,7 @@
     <title><?= e($pageTitle ?? 'Dashboard') ?> | Admin <?= e(settings()['site_name'] ?? 'Rental') ?></title>
 
     <!-- Tailwind CSS (compiled) -->
+    <link rel="stylesheet" href="/public/css/app.css">
     <link rel="stylesheet" href="/css/app.css">
 
     <!-- Dynamic Theme CSS dari settings -->

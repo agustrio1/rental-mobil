@@ -31,6 +31,7 @@
     <?php endif; ?>
 
     <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="/public/css/app.css">
     <link rel="stylesheet" href="/css/app.css">
 
     <!-- Dynamic Theme CSS -->
