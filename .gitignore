@@ -1,7 +1,6 @@
 /vendor/
 /node_modules/
 /.env
-/public/css/app.css
 /public/uploads/*
 !public/uploads/.gitkeep
 *.log
